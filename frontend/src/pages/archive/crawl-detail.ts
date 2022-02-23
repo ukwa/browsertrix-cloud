@@ -73,12 +73,19 @@ export class CrawlDetail extends LiteElement {
   }
 
   render() {
+    const isRunning = this.crawl?.state === "running";
     let sectionContent: string | TemplateResult = "";
 
     switch (this.sectionName) {
-      case "watch":
-        sectionContent = this.renderWatch();
+      case "watch": {
+        if (isRunning) {
+          sectionContent = this.renderWatch();
+        } else {
+          sectionContent = this.renderReplay();
+        }
         break;
+      }
+
       case "download":
         sectionContent = this.renderFiles();
         break;
@@ -281,6 +288,20 @@ export class CrawlDetail extends LiteElement {
   }
 
   private renderWatch() {
+    if (!this.authState) return "";
+
+    return html`
+      <h3 class="text-lg font-medium mb-2">${msg("Watch Crawl")}</h3>
+
+      <btrix-watch-crawl
+        .authHeaders=${this.authState.headers}
+        archiveId=${this.archiveId!}
+        crawlId=${this.crawlId!}
+      ></btrix-watch-crawl>
+    `;
+  }
+
+  private renderReplay() {
     const isRunning = this.crawl?.state === "running";
 
     const bearer = this.authState?.headers?.Authorization?.split(" ", 2)[1];
@@ -290,10 +311,10 @@ export class CrawlDetail extends LiteElement {
     const replaySource = this.crawl?.resources?.[0]?.path;
 
     return html`
-      <h3 class="text-lg font-medium mb-2">${msg("Watch or Replay Crawl")}</h3>
+      <h3 class="text-lg font-medium mb-2">${msg("Replay Crawl")}</h3>
 
       <div
-        class="aspect-video rounded border ${isRunning
+        class="aspect-4/3 rounded border ${isRunning
           ? "border-purple-200"
           : "border-slate-100"}"
       >
