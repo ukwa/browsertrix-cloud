@@ -49,13 +49,6 @@ export class CrawlDetail extends LiteElement {
 
   async firstUpdated() {
     this.fetchCrawl();
-
-    // try {
-    //   this.watchUrl = await this.watchCrawl();
-    //   console.log(this.watchUrl);
-    // } catch (e) {
-    //   console.error(e);
-    // }
   }
 
   connectedCallback(): void {
@@ -290,11 +283,13 @@ export class CrawlDetail extends LiteElement {
   private renderWatch() {
     if (!this.authState) return "";
 
+    const authToken = this.authState.headers.Authorization.split(" ")[1];
+
     return html`
       <h3 class="text-lg font-medium mb-2">${msg("Watch Crawl")}</h3>
 
       <btrix-watch-crawl
-        .authHeaders=${this.authState.headers}
+        authToken=${authToken}
         archiveId=${this.archiveId!}
         crawlId=${this.crawlId!}
       ></btrix-watch-crawl>
@@ -525,18 +520,6 @@ export class CrawlDetail extends LiteElement {
     );
 
     return data;
-  }
-
-  private async watchCrawl(): Promise<string> {
-    const data = await this.apiFetch(
-      `/archives/${this.archiveId}/crawls/${this.crawlId}/watch`,
-      this.authState!,
-      {
-        method: "POST",
-      }
-    );
-
-    return data.watch_url;
   }
 
   private async cancel() {
