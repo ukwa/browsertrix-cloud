@@ -20,6 +20,11 @@ type CloseMessage = Message & {
   msg: "close";
 };
 
+type Page = {
+  order: number;
+  url: string;
+};
+
 // TODO don't hardcode
 const SCREEN_WIDTH = 573;
 const SCREEN_HEIGHT = 480;
@@ -60,8 +65,12 @@ export class Screencast extends LiteElement {
   // Canvas 2D context used to draw images
   private canvasContext: CanvasRenderingContext2D | null = null;
 
-  // Image to load into canvas
-  private canvasImage = new Image();
+  // Images to load into canvas
+  private canvasImageMap: Map<number, HTMLImageElement> = new Map([
+    [0, new Image()],
+  ]);
+
+  private pageMap: Map<string, Page> = new Map();
 
   connectedCallback() {
     super.connectedCallback();
@@ -180,24 +189,47 @@ export class Screencast extends LiteElement {
     const message: ScreencastMessage | CloseMessage = JSON.parse(data);
 
     // TODO multiple pages
+    const { id } = message;
 
     if (message.msg === "screencast") {
       if (this.isConnecting) {
         this.isConnecting = false;
       }
 
-      this.currentPageUrl = message.url;
-      this.canvasImage.src = `data:image/png;base64,${message.data}`;
+      const page = this.pageMap.get(id) || this.addPage(message);
 
-      this.canvasContext?.drawImage(
-        this.canvasImage,
-        0,
-        0,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT
-      );
+      this.drawPage(page, message.data);
     } else if (message.msg === "close") {
-      // TODO
+      this.removePage(message);
     }
+  }
+
+  private addPage({ id, url }: ScreencastMessage): Page {
+    const page = {
+      order: 0,
+      url,
+    };
+
+    this.pageMap.set(id, page);
+
+    return page;
+  }
+
+  private removePage({ id }: CloseMessage) {
+    this.pageMap.delete(id);
+  }
+
+  private drawPage(page: Page, data: ScreencastMessage["data"]) {
+    const { order } = page;
+
+    this.canvasImageMap.get(order)!.src = `data:image/png;base64,${data}`;
+
+    this.canvasContext?.drawImage(
+      this.canvasImageMap.get(order)!,
+      0,
+      0,
+      SCREEN_WIDTH,
+      SCREEN_HEIGHT
+    );
   }
 }
